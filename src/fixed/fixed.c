@@ -32,28 +32,40 @@ uint32_t op3(uint32_t a, uint32_t b)
 /* Q11.20 multiplication without a hardware multiplier. */
 int32_t q_mul(int32_t a, int32_t b)
 {
-    uint64_t x = a < 0 ? (uint64_t) (-(int64_t) a) : (uint64_t) a;
+    uint32_t x = (uint32_t) a;
+    uint32_t y = (uint32_t) b;
 
-    volatile uint32_t y = b < 0 ? (uint32_t) (-(int64_t) b) : (uint32_t) b;
+    if (a < 0)
+        x = 0u - x;
+    if (b < 0)
+        y = 0u - y;
 
-    uint64_t product = 0;
+    uint32_t lo = 0;
+    uint32_t hi = 0;
+    uint32_t multiplicand_lo = x;
+    uint32_t multiplicand_hi = 0;
 
-    /* Shift-and-add multiplication. */
     while (y != 0u) {
-        if ((y & 1u) != 0u)
-            product += x;
+        if ((y & 1u) != 0u) {
+            uint32_t old_lo = lo;
+            lo += multiplicand_lo;
+            hi += multiplicand_hi + (lo < old_lo);
+        }
 
-        x <<= 1;
+        multiplicand_hi = (multiplicand_hi << 1) | (multiplicand_lo >> 31);
+        multiplicand_lo <<= 1;
         y >>= 1;
     }
 
-    /* Restore the sign of the product. */
-    int64_t signed_product =
-        ((a < 0) != (b < 0)) ? -(int64_t) product : (int64_t) product;
+    if ((a < 0) != (b < 0)) {
+        uint32_t borrow = (lo != 0u);
+        lo = 0u - lo;
+        hi = 0u - hi - borrow;
+    }
 
-    /* Round ties toward positive infinity. */
-    int64_t rounded = (signed_product + (INT64_C(1) << (Q - 1))) >> Q;
+    uint32_t carry = (lo >> 19) == 0x1fffu;
+    lo += 1u << 19;
+    hi += carry;
 
-    /* Keep only the low 32 bits. */
-    return (int32_t) (uint32_t) rounded;
+    return (int32_t) ((lo >> 20) | (hi << 12));
 }
