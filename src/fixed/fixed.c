@@ -34,7 +34,7 @@ int32_t q_mul(int32_t a, int32_t b)
 {
     uint64_t x = a < 0 ? (uint64_t) (-(int64_t) a) : (uint64_t) a;
 
-    uint32_t y = b < 0 ? (uint32_t) (-(int64_t) b) : (uint32_t) b;
+    volatile uint32_t y = b < 0 ? (uint32_t) (-(int64_t) b) : (uint32_t) b;
 
     uint64_t product = 0;
 
