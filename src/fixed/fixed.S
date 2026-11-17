@@ -105,11 +105,10 @@ q_mul_asm:
     andi a0, t4, 1
     beqz a0, .Lq_skip_add
 
-    add a0, t0, t2
-    sltu a1, a0, t0
+    add t0, t0, t2
+    sltu a1, t0, t2
     add t1, t1, t3
     add t1, t1, a1
-    mv t0, a0
 
 .Lq_skip_add:
     # Shift 64-bit multiplicand left by one bit.
